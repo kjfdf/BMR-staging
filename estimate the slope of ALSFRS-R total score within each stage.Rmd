@@ -1,0 +1,92 @@
+---
+title: "ALSFRS-R score trajectory according to BMR, King's, MiToS stage"
+author: "Ilhan Yoo"
+date: "r format(Sys.Date())"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=T, fig.align="center", message=F, warning=F, dpi=300, dev="tiff")
+```
+
+## library loading
+```{r}
+library(tidyverse)
+library(broom)
+library(gridExtra)
+```
+
+## load datasets
+# BMR stage dataset
+# dead subjects dataset
+# King and MiToS stage dataset, subjectid의 이름은 bmr stage dataset과 같은 SubjectID로 변경 
+# ALSFRS-R score dataset
+```{r}
+bmr <- read.csv("stage_bmr.csv")
+surv <- read.csv("survival.csv")
+king_mitos <- read.csv("stage_king_mitos.csv")
+alsfrs_r <- read.csv("alsfrs_rev.csv")
+```
+
+
+# f/u시점의 ALSFRS변화를 보기위한 환자만 selection: 방문횟수가 2번이상인 환자만 남기고 나머지는 제외
+```{r}
+temp_bmr <- bmr %>% group_by(SubjectID) %>% 
+  mutate(visit=n()) %>% 
+  ungroup() %>% 
+  filter(visit>=2) %>% 
+  left_join(alsfrs_r,by=c("SubjectID","feature_delta"))
+temp_king_mitos <- king_mitos %>% group_by(SubjectID) %>% 
+  mutate(visit=n()) %>% 
+  ungroup() %>% 
+  filter(visit>=2) %>% 
+  left_join(alsfrs_r,by=c("SubjectID","feature_delta"))
+```
+
+
+# BMR stage에 따른 ALS의 진행에 따른 ALSFRS-R의 변화양상 확인 (ALSFRS-R score가 없는 BMR stage 7는 제외)
+```{r}
+p_bmr_3 <- temp_bmr %>% filter(bmr_stage<=6) %>% ggplot(aes(feature_delta,ALSFRS_R_Total,col=factor(bmr_stage),group=factor(SubjectID)))+
+  geom_line(alpha=0.2)+
+  facet_wrap(~bmr_stage,ncol=3,nrow=3)+
+  scale_x_continuous(limits=c(0,max(temp_bmr$feature_delta)))+
+  scale_color_discrete(name="ALSFRS-R slope per month")+
+  labs(x="Visit time (months)")+
+  theme_bw()+
+  theme(legend.position = "none",panel.grid.major = element_blank(),panel.grid.minor = element_blank())
+```
+
+
+
+# King's stage에 따른 ALS의 진행에 따른 ALSFRS-R의 변화양상 확인 (ALSFRS-R score가 없는 King's stage 5는 제외) 
+```{r}
+p_king_3 <- temp_king_mitos %>% filter(king<=4) %>% ggplot(aes(feature_delta,ALSFRS_R_Total,col=factor(king),group=factor(SubjectID)))+
+  geom_line(alpha=0.2)+
+  facet_wrap(~king,ncol=3,nrow=2)+
+  scale_x_continuous(limits=c(0,max(temp_king_mitos$feature_delta)))+
+  scale_color_discrete(name="ALSFRS-R slope per month")+
+  labs(x="Visit time (months)")+
+  theme_bw()+
+  theme(legend.position = "none",panel.grid.major = element_blank(),panel.grid.minor = element_blank())
+```
+
+
+
+# MiToS stage에 따른 ALS의 진행에 따른 ALSFRS-R의 변화양상 확인 (ALSFRS-R score가 없는 MiToS stage 5는 제외) 
+```{r}
+p_mitos_3 <- temp_king_mitos %>% filter(mitos<=4) %>% ggplot(aes(feature_delta,ALSFRS_R_Total,col=factor(mitos),group=factor(SubjectID)))+
+  geom_line(alpha=0.2)+
+  facet_wrap(~mitos,ncol=3,nrow=2)+
+  scale_x_continuous(limits=c(0,max(temp_king_mitos$feature_delta)))+
+  scale_color_discrete(name="ALSFRS-R slope per month")+
+  labs(x="Visit time (months)")+
+  theme_bw()+
+  theme(legend.position = "none",panel.grid.major = element_blank(),panel.grid.minor = element_blank())
+```
+
+# BMR stage가 stage가 더 높을수록 ALSFRS-R의 감소속도가 더 빠른지 확인하고 King, MiToS stage과 병의 진행을 잘 반영하는지 비교하기 위해 plot들을 merge하여 
+```{r fig.height=10}
+grid.arrange(p_bmr_3,p_king_3,p_mitos_3)
+```

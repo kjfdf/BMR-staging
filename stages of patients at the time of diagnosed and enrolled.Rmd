@@ -1,0 +1,75 @@
+---
+title: "characteristics of each stage"
+author: "Ilhan Yoo"
+date: "r format(Sys.Date())"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.align="center", message=F, warning=F, dpi = 300, dev="tiff")
+```
+
+## library loading
+
+```{r}
+library(tidyverse)
+library(gridExtra)
+```
+
+## load datasets
+# BMR stage dataset
+# King and MiToS stage dataset, subjectid의 이름은 bmr stage dataset과 같은 SubjectID로 변경 
+
+```{r}
+bmr <- read.csv("stage_bmr.csv")
+king_mitos <- read.csv("stage_king_mitos.csv")
+```
+
+
+## 첫 방문시점의 BMR stage 별 subject수 확인
+# BMR stage 0: n=189, 1: n=10546, 2: n=9814, 3: n=6127, 4: n=1723, 5: n=344, 6: n=2
+```{r}
+p_bmr_2 <- bmr %>% group_by(SubjectID) %>% 
+  mutate(first_bmr=first(bmr_stage)) %>%
+  ungroup() %>% 
+  ggplot(aes(x=first_bmr))+
+  geom_bar()+
+  coord_cartesian(xlim=c(-1,6))+
+  theme_bw()+
+  theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())+
+  labs(x="BMR stage at first visit",y="Number of subjects")
+```
+
+## 첫 방문시점의 King's stage 별 subject수 확인 
+# King's stage 1: n=6878, 2: n=8228, 3: n=6700, 4: n=6939
+```{r}
+p_king_2 <- king_mitos %>% group_by(SubjectID) %>% 
+  mutate(first_king=first(king)) %>%
+  ungroup() %>% 
+  ggplot(aes(x=first_king))+
+  geom_bar()+
+  theme_bw()+
+  theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())+
+  labs(x="King's stage at first visit",y="Number of subjects")
+```
+
+
+
+## 첫 방문시점의 MiToS stage 별 subject수 확인 
+# MiToS stage 0: n=23354, 1: n=4980, 2: n=380, 3: n=31
+```{r}
+p_mitos_2 <- king_mitos %>% group_by(SubjectID) %>% 
+  mutate(first_mitos=first(mitos)) %>%
+  ungroup() %>% 
+  ggplot(aes(x=first_mitos))+
+  geom_bar()+
+  theme_bw()+
+  theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())+
+  labs(x="MiToS stage at first visit",y="Number of subjects")
+```
+# 첫방문시점의 BMR, King's, MiToS stage 분포 비교  
+```{r}
+grid.arrange(p_bmr_2,p_king_2,p_mitos_2)
+```
